@@ -1,0 +1,24 @@
+import { Maybe, Just, Nothing } from "Maybe"
+
+#- import express from 'express' -#
+#- const expressApp = express() -#
+
+data Request = Request
+
+data Response = Response
+
+send :: String -> Response -> Response
+export send = (message, response) => #- response.send(message) -#
+
+get :: String -> (Request -> Response -> Response) -> ()
+export get = (path, callback) => #- expressApp.get(path, callback) -#
+
+queryParamByName :: String -> Request -> Maybe String
+export queryParamByName = (paramName, request) => #- {
+  const param = request.query[paramName]
+
+  return param ? Just(param) : Nothing;
+} -#
+
+listen :: Number -> (a -> b) -> ()
+export listen = (port, callback) => #- expressApp.listen(port, () => callback("")) -#
