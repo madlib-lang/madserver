@@ -1,0 +1,108 @@
+import type { Wish } from "Wish"
+import type { Request, Response } from "Http"
+import { when } from "Function"
+import IO from "IO"
+import { fulfill } from "Wish"
+
+type Server = Server
+export type Server
+
+type LogLevel
+  = InfoLevel
+  | WarningLevel
+  | ErrorLevel
+
+alias Options = {
+  verbose :: Boolean,
+}
+
+create :: Options -> Server
+create = extern "madserver__create"
+
+runFFI :: Integer -> Server -> Server
+runFFI = extern "madserver__run"
+
+// threadedRunFFI :: Integer -> Server -> Server
+// threadedRunFFI = extern "madserver__threaded_run"
+
+getOptions :: Server -> Options
+getOptions = extern "madserver__getOptions"
+
+/**
+ * The first parameter is a function taking as first parameter the initial request
+ * and as second parameter the callback called when the Wish resolved. This handler
+ * is used by the c++ code in order to know when we're ready to write the response
+ * it then receives.
+ */
+getFFI :: (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI = extern "madserver__addGetHandler"
+
+get :: (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+get = (handler, server) => {
+  getFFI(
+    (request, cb) => pipe(
+      handler,
+      fulfill(cb, cb)
+    )(request),
+    server
+  )
+
+  return server
+}
+
+logLevelToString :: LogLevel -> String
+logLevelToString = (logLevel) => where(logLevel) {
+  InfoLevel =>
+    "INFO"
+
+  WarningLevel =>
+    "WARNING"
+
+  ErrorLevel =>
+    "ERROR"
+}
+
+log :: LogLevel -> String -> {}
+log = (logLevel, content) =>
+  IO.putLine(`[${logLevelToString(logLevel)}]: ${content}`)
+
+run :: Integer -> Server -> Server
+run = (port, server) => {
+  setTimeout(
+    (_) => {
+      options = getOptions(server)
+      when(
+        .verbose,
+        (_) => {
+          log(InfoLevel, `Verbose mode enabled`)
+          log(InfoLevel, `Server started on port '${inspect(port)}'`)
+          return options
+        },
+        options
+      )
+
+      return runFFI(port, server)
+    },
+    0
+  )
+
+  return server
+}
+
+
+setTimeout :: ({} -> a) -> Integer -> {}
+setTimeout = extern "__setTimeout__"
+
+
+// User land
+pipe(
+  create,
+  run(3000)
+)({ verbose: true })
+
+pipe(
+  create,
+  run(2900)
+)({ verbose: true })
+
+IO.putLine("TCHOU")

@@ -1,11 +1,38 @@
 import { Maybe, Just, Nothing } from "Maybe"
+import D from "Dictionary"
 
-#- import express from 'express' -#
+
+#- import express from "express" -#
+#- import bodyParser from "body-parser" -#
 #- const expressApp = express() -#
+#- expressApp.use(bodyParser.text({type: '*/*'})) -#
 
-data Request = Request
+alias Request = {
+  query :: D.Dictionary String String,
+  body  :: String
+}
 
-data Response = Response
+type Response = Response
+
+export type HttpMethod
+  = GET
+  | POST
+  | PUT
+  | DELETE
+  | PATCH
+  | HEAD
+  | OPTIONS
+
+
+route :: HttpMethod -> String -> (Request -> Response -> Response) -> ()
+export route = (method, path, callback) => where(method)
+  is GET     : get(path, callback)
+  is POST    : post(path, callback)
+  is PUT     : put(path, callback)
+  is DELETE  : _delete(path, callback)
+  is PATCH   : patch(path, callback)
+  is HEAD    : head(path, callback)
+  is OPTIONS : options(path, callback)
 
 send :: String -> Response -> Response
 export send = (message, response) => #- response.send(message) -#
@@ -13,12 +40,33 @@ export send = (message, response) => #- response.send(message) -#
 get :: String -> (Request -> Response -> Response) -> ()
 export get = (path, callback) => #- expressApp.get(path, callback) -#
 
+post :: String -> (Request -> Response -> Response) -> ()
+export post = (path, callback) => #- expressApp.post(path, callback) -#
+
+put :: String -> (Request -> Response -> Response) -> ()
+export put = (path, callback) => #- expressApp.put(path, callback) -#
+
+_delete :: String -> (Request -> Response -> Response) -> ()
+export _delete = (path, callback) => #- expressApp.delete(path, callback) -#
+
+patch :: String -> (Request -> Response -> Response) -> ()
+export patch = (path, callback) => #- expressApp.patch(path, callback) -#
+
+head :: String -> (Request -> Response -> Response) -> ()
+export head = (path, callback) => #- expressApp.head(path, callback) -#
+
+options :: String -> (Request -> Response -> Response) -> ()
+export options = (path, callback) => #- expressApp.options(path, callback) -#
+
 queryParamByName :: String -> Request -> Maybe String
 export queryParamByName = (paramName, request) => #- {
   const param = request.query[paramName]
 
   return param ? Just(param) : Nothing;
 } -#
+
+getBody :: Request -> String
+export getBody = (req) => req.body
 
 listen :: Number -> (a -> b) -> ()
 export listen = (port, callback) => #- expressApp.listen(port, () => callback("")) -#
