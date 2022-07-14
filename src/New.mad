@@ -2,7 +2,8 @@ import type { Wish } from "Wish"
 import type { Request, Response } from "Http"
 import { when } from "Function"
 import IO from "IO"
-import { fulfill } from "Wish"
+import { after, fulfill } from "Wish"
+import { Header } from "Http"
 
 type Server = Server
 export type Server
@@ -34,16 +35,29 @@ getOptions = extern "madserver__getOptions"
  * is used by the c++ code in order to know when we're ready to write the response
  * it then receives.
  */
-getFFI :: (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
 getFFI = extern "madserver__addGetHandler"
 
-get :: (Request String -> Wish (Response String) (Response String)) -> Server -> Server
-get = (handler, server) => {
+get :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+get = (path, handler, server) => {
   getFFI(
-    (request, cb) => pipe(
-      handler,
-      fulfill(cb, cb)
-    )(request),
+    path,
+    (request, cb) => {
+      when(
+        .verbose,
+        (options) => {
+          log(InfoLevel, `Incoming request for route '${path}'`)
+          log(InfoLevel, `Url requested: '${request.url}'`)
+          return options
+        },
+        getOptions(server)
+      )
+
+      return pipe(
+        handler,
+        fulfill(cb, cb)
+      )(request)
+    },
     server
   )
 
@@ -53,18 +67,18 @@ get = (handler, server) => {
 logLevelToString :: LogLevel -> String
 logLevelToString = (logLevel) => where(logLevel) {
   InfoLevel =>
-    "INFO"
+    IO.green("INFO")
 
   WarningLevel =>
-    "WARNING"
+    IO.yellow("WARNING")
 
   ErrorLevel =>
-    "ERROR"
+    IO.red("ERROR")
 }
 
 log :: LogLevel -> String -> {}
 log = (logLevel, content) =>
-  IO.putLine(`[${logLevelToString(logLevel)}]: ${content}`)
+  IO.putLine(`[${logLevelToString(logLevel)}] ${content}`)
 
 run :: Integer -> Server -> Server
 run = (port, server) => {
@@ -97,12 +111,19 @@ setTimeout = extern "__setTimeout__"
 // User land
 pipe(
   create,
+  get("/:id/hello", (req) =>
+    of({
+      body: "<h1>HELLO</h1>",
+      headers: [Header("Content-Type", "text/html")],
+      status: 402
+    })
+  ),
+  get("/", (req) =>
+    of({
+      body: "<h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1><h1>HELLO</h1>",
+      headers: [Header("Content-Type", "text/html")],
+      status: 200
+    })
+  ),
   run(3000)
 )({ verbose: true })
-
-pipe(
-  create,
-  run(2900)
-)({ verbose: true })
-
-IO.putLine("TCHOU")

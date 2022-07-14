@@ -2,5 +2,8 @@
   "name": "MadServer",
   "main": "src/Main.mad",
   "madlibVersion": "0.13.0",
-  "linkerFlags": "-L./lib/build -L./lib/lib -lusocket -lmadserver"
+  "staticLibs": [
+    "./lib/build/libmadserver.a",
+    "./lib/lib/libusocket.a"
+  ]
 }
