@@ -1,7 +1,8 @@
 import type { Wish } from "Wish"
 import type { Request, Response } from "Http"
-import { when } from "Function"
 import IO from "IO"
+import Date from "Date"
+import { when } from "Function"
 import { after, fulfill } from "Wish"
 import { Header } from "Http"
 
@@ -77,8 +78,10 @@ logLevelToString = (logLevel) => where(logLevel) {
 }
 
 log :: LogLevel -> String -> {}
-log = (logLevel, content) =>
-  IO.putLine(`[${logLevelToString(logLevel)}] ${content}`)
+log = (logLevel, content) => {
+  date = Date.toISOString(Date.now({}))
+  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
+}
 
 run :: Integer -> Server -> Server
 run = (port, server) => {
