@@ -172,6 +172,78 @@ extern "C" {
     return server;
   }
 
+  madserver__server_t *madserver__addPostHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->post(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addPutHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->put(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addPatchHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->patch(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addDeleteHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->del(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addHeadHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->head(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addConnectHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->connect(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addTraceHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->trace(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addOptionsHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->options(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
+  madserver__server_t *madserver__addAnyHandler(char *path, PAP_t *handler, madserver__server_t *server) {
+    server->uWSApp->any(std::string(path), [handler](auto *res, auto *req) {
+      madserver__requestHandler(handler, res, req);
+    });
+
+    return server;
+  }
+
 #ifdef __cplusplus
 }
 #endif

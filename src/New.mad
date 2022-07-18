@@ -1,10 +1,21 @@
 import type { Wish } from "Wish"
-import type { Request, Response } from "Http"
+import type { Request, Response, Method } from "Http"
 import IO from "IO"
 import Date from "Date"
 import { when } from "Function"
-import { after, fulfill } from "Wish"
-import { Header } from "Http"
+import { fulfill } from "Wish"
+import {
+  Header,
+  CONNECT,
+  DELETE,
+  GET,
+  HEAD,
+  OPTIONS,
+  PATCH,
+  POST,
+  PUT,
+  TRACE
+} from "Http"
 
 type Server = Server
 export type Server
@@ -17,6 +28,26 @@ type LogLevel
 alias Options = {
   verbose :: Boolean,
 }
+
+
+logLevelToString :: LogLevel -> String
+logLevelToString = (logLevel) => where(logLevel) {
+  InfoLevel =>
+    IO.green("INFO")
+
+  WarningLevel =>
+    IO.yellow("WARNING")
+
+  ErrorLevel =>
+    IO.red("ERROR")
+}
+
+log :: LogLevel -> String -> {}
+log = (logLevel, content) => {
+  date = Date.toISOString(Date.now({}))
+  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
+}
+
 
 create :: Options -> Server
 create = extern "madserver__create"
@@ -39,63 +70,138 @@ getOptions = extern "madserver__getOptions"
 getFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
 getFFI = extern "madserver__addGetHandler"
 
-get :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
-get = (path, handler, server) => {
-  getFFI(
-    path,
-    (request, cb) => {
-      when(
-        .verbose,
-        (options) => {
-          log(InfoLevel, `Incoming request for route '${path}'`)
-          log(InfoLevel, `Url requested: '${request.url}'`)
-          return options
-        },
-        getOptions(server)
-      )
+postFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+postFFI = extern "madserver__addPostHandler"
 
-      return pipe(
-        handler,
-        fulfill(cb, cb)
-      )(request)
-    },
-    server
-  )
+putFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+putFFI = extern "madserver__addPutHandler"
+
+patchFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+patchFFI = extern "madserver__addPatchHandler"
+
+deleteFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+deleteFFI = extern "madserver__addDeleteHandler"
+
+headFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+headFFI = extern "madserver__addHeadHandler"
+
+connectFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+connectFFI = extern "madserver__addConnectHandler"
+
+traceFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+traceFFI = extern "madserver__addTraceHandler"
+
+optionsFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+optionsFFI = extern "madserver__addOptionsHandler"
+
+anyFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+anyFFI = extern "madserver__addAnyHandler"
+
+addRoute :: (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+addRoute = (routeFn, path, handler, server) => routeFn(
+  path,
+  (request, cb) => {
+    when(
+      .verbose,
+      (opts) => {
+        log(InfoLevel, `Incoming request for route '${path}'`)
+        log(InfoLevel, `Url requested: '${request.url}'`)
+        return opts
+      },
+      getOptions(server)
+    )
+
+    return pipe(
+      handler,
+      fulfill(cb, cb)
+    )(request)
+  },
+  server
+)
+
+getRouteFn :: Method -> (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server)
+getRouteFn = (method) => where(method) {
+  GET =>
+    getFFI
+
+  POST =>
+    postFFI
+
+  PUT =>
+    putFFI
+
+  PATCH =>
+    patchFFI
+
+  DELETE =>
+    deleteFFI
+
+  HEAD =>
+    headFFI
+
+  CONNECT =>
+    connectFFI
+
+  TRACE =>
+    traceFFI
+
+  OPTIONS =>
+    optionsFFI
+}
+
+route :: Method -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export route = (method, path, handler, server) => {
+  pipe(
+    getRouteFn,
+    addRoute($, path, handler, server)
+  )(method)
 
   return server
 }
 
-logLevelToString :: LogLevel -> String
-logLevelToString = (logLevel) => where(logLevel) {
-  InfoLevel =>
-    IO.green("INFO")
+any :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+any = addRoute(anyFFI)
 
-  WarningLevel =>
-    IO.yellow("WARNING")
+get :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export get = route(GET)
 
-  ErrorLevel =>
-    IO.red("ERROR")
-}
+post :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export post = route(POST)
 
-log :: LogLevel -> String -> {}
-log = (logLevel, content) => {
-  date = Date.toISOString(Date.now({}))
-  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
-}
+put :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export put = route(PUT)
+
+patch :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export patch = route(PATCH)
+
+delete :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export delete = route(DELETE)
+
+head :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export head = route(HEAD)
+
+connect :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export connect = route(CONNECT)
+
+trace :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export trace = route(TRACE)
+
+options :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export options = route(OPTIONS)
 
 run :: Integer -> Server -> Server
 run = (port, server) => {
   setTimeout(
-    (_) => {
-      options = getOptions(server)
+    () => {
+      opts = getOptions(server)
       when(
         .verbose,
-        (_) => {
+        () => {
           log(InfoLevel, `Verbose mode enabled`)
           log(InfoLevel, `Server started on port '${inspect(port)}'`)
-          return options
+          return opts
         },
-        options
+        opts
       )
 
       return runFFI(port, server)
