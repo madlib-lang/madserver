@@ -44,6 +44,7 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         body->index = 1;
       } else {
         body->index = 0;
+        body->bodyData = (void*) bodyString.c_str();
       }
 
       madlib__list__Node_t *headers = madlib__list__empty();

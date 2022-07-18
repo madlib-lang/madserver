@@ -1,72 +1,213 @@
-import { Maybe, Just, Nothing } from "Maybe"
-import D from "Dictionary"
+import type { Wish } from "Wish"
+import type { Request, Response, Method } from "Http"
+import IO from "IO"
+import Date from "Date"
+import { when } from "Function"
+import { fulfill } from "Wish"
+import {
+  CONNECT,
+  DELETE,
+  GET,
+  HEAD,
+  OPTIONS,
+  PATCH,
+  POST,
+  PUT,
+  TRACE
+} from "Http"
 
+type Server = Server
+export type Server
 
-#- import express from "express" -#
-#- import bodyParser from "body-parser" -#
-#- const expressApp = express() -#
-#- expressApp.use(bodyParser.text({type: '*/*'})) -#
+type LogLevel
+  = InfoLevel
+  | WarningLevel
+  | ErrorLevel
 
-alias Request = {
-  query :: D.Dictionary String String,
-  body  :: String
+export alias Options = {
+  verbose :: Boolean,
 }
 
-type Response = Response
 
-export type HttpMethod
-  = GET
-  | POST
-  | PUT
-  | DELETE
-  | PATCH
-  | HEAD
-  | OPTIONS
+logLevelToString :: LogLevel -> String
+logLevelToString = (logLevel) => where(logLevel) {
+  InfoLevel =>
+    IO.green("INFO")
+
+  WarningLevel =>
+    IO.yellow("WARNING")
+
+  ErrorLevel =>
+    IO.red("ERROR")
+}
+
+log :: LogLevel -> String -> {}
+log = (logLevel, content) => {
+  date = Date.toISOString(Date.now({}))
+  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
+}
 
 
-route :: HttpMethod -> String -> (Request -> Response -> Response) -> ()
-export route = (method, path, callback) => where(method)
-  is GET     : get(path, callback)
-  is POST    : post(path, callback)
-  is PUT     : put(path, callback)
-  is DELETE  : _delete(path, callback)
-  is PATCH   : patch(path, callback)
-  is HEAD    : head(path, callback)
-  is OPTIONS : options(path, callback)
+create :: Options -> Server
+export create = extern "madserver__create"
 
-send :: String -> Response -> Response
-export send = (message, response) => #- response.send(message) -#
+runFFI :: Integer -> Server -> Server
+runFFI = extern "madserver__run"
 
-get :: String -> (Request -> Response -> Response) -> ()
-export get = (path, callback) => #- expressApp.get(path, callback) -#
+getOptions :: Server -> Options
+getOptions = extern "madserver__getOptions"
 
-post :: String -> (Request -> Response -> Response) -> ()
-export post = (path, callback) => #- expressApp.post(path, callback) -#
+/**
+ * The first parameter is a function taking as first parameter the initial request
+ * and as second parameter the callback called when the Wish resolved. This handler
+ * is used by the c++ code in order to know when we're ready to write the response
+ * it then receives.
+ */
+getFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI = extern "madserver__addGetHandler"
 
-put :: String -> (Request -> Response -> Response) -> ()
-export put = (path, callback) => #- expressApp.put(path, callback) -#
+postFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+postFFI = extern "madserver__addPostHandler"
 
-_delete :: String -> (Request -> Response -> Response) -> ()
-export _delete = (path, callback) => #- expressApp.delete(path, callback) -#
+putFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+putFFI = extern "madserver__addPutHandler"
 
-patch :: String -> (Request -> Response -> Response) -> ()
-export patch = (path, callback) => #- expressApp.patch(path, callback) -#
+patchFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+patchFFI = extern "madserver__addPatchHandler"
 
-head :: String -> (Request -> Response -> Response) -> ()
-export head = (path, callback) => #- expressApp.head(path, callback) -#
+deleteFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+deleteFFI = extern "madserver__addDeleteHandler"
 
-options :: String -> (Request -> Response -> Response) -> ()
-export options = (path, callback) => #- expressApp.options(path, callback) -#
+headFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+headFFI = extern "madserver__addHeadHandler"
 
-queryParamByName :: String -> Request -> Maybe String
-export queryParamByName = (paramName, request) => #- {
-  const param = request.query[paramName]
+connectFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+connectFFI = extern "madserver__addConnectHandler"
 
-  return param ? Just(param) : Nothing;
-} -#
+traceFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+traceFFI = extern "madserver__addTraceHandler"
 
-getBody :: Request -> String
-export getBody = (req) => req.body
+optionsFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+optionsFFI = extern "madserver__addOptionsHandler"
 
-listen :: Number -> (a -> b) -> ()
-export listen = (port, callback) => #- expressApp.listen(port, () => callback("")) -#
+anyFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+anyFFI = extern "madserver__addAnyHandler"
+
+addRoute :: (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+addRoute = (routeFn, path, handler, server) => routeFn(
+  path,
+  (request, cb) => {
+    when(
+      .verbose,
+      (opts) => {
+        log(InfoLevel, `Incoming request for route '${path}'`)
+        log(InfoLevel, `Url requested: '${request.url}'`)
+        return opts
+      },
+      getOptions(server)
+    )
+
+    return pipe(
+      handler,
+      fulfill(cb, cb)
+    )(request)
+  },
+  server
+)
+
+getRouteFn :: Method -> (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server)
+getRouteFn = (method) => where(method) {
+  GET =>
+    getFFI
+
+  POST =>
+    postFFI
+
+  PUT =>
+    putFFI
+
+  PATCH =>
+    patchFFI
+
+  DELETE =>
+    deleteFFI
+
+  HEAD =>
+    headFFI
+
+  CONNECT =>
+    connectFFI
+
+  TRACE =>
+    traceFFI
+
+  OPTIONS =>
+    optionsFFI
+}
+
+route :: Method -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export route = (method, path, handler, server) => {
+  pipe(
+    getRouteFn,
+    addRoute($, path, handler, server)
+  )(method)
+
+  return server
+}
+
+any :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+any = addRoute(anyFFI)
+
+get :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export get = route(GET)
+
+post :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export post = route(POST)
+
+put :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export put = route(PUT)
+
+patch :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export patch = route(PATCH)
+
+delete :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export delete = route(DELETE)
+
+head :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export head = route(HEAD)
+
+connect :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export connect = route(CONNECT)
+
+trace :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export trace = route(TRACE)
+
+options :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+export options = route(OPTIONS)
+
+run :: Integer -> Server -> Server
+export run = (port, server) => {
+  setTimeout(
+    () => {
+      opts = getOptions(server)
+      when(
+        .verbose,
+        () => {
+          log(InfoLevel, `Verbose mode enabled`)
+          log(InfoLevel, `Server started on port '${inspect(port)}'`)
+          return opts
+        },
+        opts
+      )
+
+      return runFFI(port, server)
+    },
+    0
+  )
+
+  return server
+}
+
+
+setTimeout :: ({} -> a) -> Integer -> {}
+setTimeout = extern "__setTimeout__"
