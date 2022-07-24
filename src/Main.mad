@@ -1,10 +1,14 @@
 import type { Wish } from "Wish"
-import type { Request, Response, Method } from "Http"
+import type { Response, Method, Header } from "Http"
+import type { Maybe } from "Maybe"
 import IO from "IO"
 import Date from "Date"
+import Url from "Url"
+import { fromMaybe } from "Maybe"
 import { when } from "Function"
 import { fulfill } from "Wish"
 import {
+  methodStr,
   CONNECT,
   DELETE,
   GET,
@@ -15,9 +19,22 @@ import {
   PUT,
   TRACE
 } from "Http"
+import { parseQueryParameters, parseUrlParameters } from "@/UrlParser"
+
 
 type Server = Server
 export type Server
+
+
+alias IncomingRequest = {
+  method :: Method,
+  url :: String,
+  headers :: List Header,
+  body :: Maybe String,
+  ip :: String,
+  queryParameters :: Dictionary String String,
+  urlParameters :: Dictionary String String,
+}
 
 type LogLevel
   = InfoLevel
@@ -41,6 +58,7 @@ logLevelToString = (logLevel) => where(logLevel) {
     IO.red("ERROR")
 }
 
+
 log :: LogLevel -> String -> {}
 log = (logLevel, content) => {
   date = Date.toISOString(Date.now({}))
@@ -63,45 +81,53 @@ getOptions = extern "madserver__getOptions"
  * is used by the c++ code in order to know when we're ready to write the response
  * it then receives.
  */
-getFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 getFFI = extern "madserver__addGetHandler"
 
-postFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+postFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 postFFI = extern "madserver__addPostHandler"
 
-putFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+putFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 putFFI = extern "madserver__addPutHandler"
 
-patchFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+patchFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 patchFFI = extern "madserver__addPatchHandler"
 
-deleteFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+deleteFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 deleteFFI = extern "madserver__addDeleteHandler"
 
-headFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+headFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 headFFI = extern "madserver__addHeadHandler"
 
-connectFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+connectFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 connectFFI = extern "madserver__addConnectHandler"
 
-traceFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+traceFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 traceFFI = extern "madserver__addTraceHandler"
 
-optionsFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+optionsFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 optionsFFI = extern "madserver__addOptionsHandler"
 
-anyFFI :: String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server
+anyFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
 anyFFI = extern "madserver__addAnyHandler"
 
-addRoute :: (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
-addRoute = (routeFn, path, handler, server) => routeFn(
+addRoute :: String -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+addRoute = (methodName, routeFn, path, handler, server) => routeFn(
   path,
   (request, cb) => {
+    decodedUrl = fromMaybe(request.url, Url.decode(request.url))
+    preparedRequest = {
+      ...request,
+      url: decodedUrl,
+      queryParameters: parseQueryParameters(decodedUrl),
+      urlParameters: parseUrlParameters(path, decodedUrl),
+    }
+
     when(
       .verbose,
       (opts) => {
-        log(InfoLevel, `Incoming request for route '${path}'`)
-        log(InfoLevel, `Url requested: '${request.url}'`)
+        log(InfoLevel, `Incoming request for route '${methodName} ${path}'`)
+        log(InfoLevel, `Url requested: '${methodName} ${preparedRequest.url}'`)
         return opts
       },
       getOptions(server)
@@ -110,12 +136,12 @@ addRoute = (routeFn, path, handler, server) => routeFn(
     return pipe(
       handler,
       fulfill(cb, cb)
-    )(request)
+    )(preparedRequest)
   },
   server
 )
 
-getRouteFn :: Method -> (String -> (Request String -> (Response String -> {}) -> {}) -> Server -> Server)
+getRouteFn :: Method -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server)
 getRouteFn = (method) => where(method) {
   GET =>
     getFFI
@@ -145,44 +171,44 @@ getRouteFn = (method) => where(method) {
     optionsFFI
 }
 
-route :: Method -> String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+route :: Method -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export route = (method, path, handler, server) => {
   pipe(
     getRouteFn,
-    addRoute($, path, handler, server)
+    addRoute(methodStr(method), $, path, handler, server)
   )(method)
 
   return server
 }
 
-any :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
-any = addRoute(anyFFI)
+any :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export any = addRoute("ANY", anyFFI)
 
-get :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+get :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export get = route(GET)
 
-post :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+post :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export post = route(POST)
 
-put :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+put :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export put = route(PUT)
 
-patch :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+patch :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export patch = route(PATCH)
 
-delete :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+delete :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export delete = route(DELETE)
 
-head :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+head :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export head = route(HEAD)
 
-connect :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+connect :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export connect = route(CONNECT)
 
-trace :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+trace :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export trace = route(TRACE)
 
-options :: String -> (Request String -> Wish (Response String) (Response String)) -> Server -> Server
+options :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
 export options = route(OPTIONS)
 
 run :: Integer -> Server -> Server

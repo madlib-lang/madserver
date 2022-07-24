@@ -68,9 +68,29 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         ++headerIt;
       }
 
-
       madlib__http__Method_t *method = (madlib__http__Method_t*) GC_MALLOC(sizeof(madlib__http__Method_t));
-      method->methodIndex = 2; // GET
+      if (req->getMethod() == "get") {
+          method->methodIndex = 2;
+      } else if (req->getMethod() == "post") {
+          method->methodIndex = 6;
+      } else if (req->getMethod() == "put") {
+          method->methodIndex = 7;
+      } else if (req->getMethod() == "patch") {
+          method->methodIndex = 5;
+      } else if (req->getMethod() == "delete") {
+          method->methodIndex = 1;
+      } else if (req->getMethod() == "head") {
+          method->methodIndex = 3;
+      } else if (req->getMethod() == "connect") {
+          method->methodIndex = 0;
+      } else if (req->getMethod() == "trace") {
+          method->methodIndex = 8;
+      } else if (req->getMethod() == "options") {
+          method->methodIndex = 4;
+      } else {
+        // we default to GET if we don't know
+        method->methodIndex = 2;
+      }
 
       char *url;
       if (!req->getQuery().empty()) {
@@ -84,6 +104,12 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         memcpy(url, req->getUrl().data(), req->getUrl().size());
         url[req->getUrl().size()] = '\0';
       }
+
+      // ip address, most likely v6
+      std::string_view remoteIp = res->getRemoteAddressAsText();
+      char *ip = (char*) GC_MALLOC_ATOMIC(remoteIp.size() + 1);
+      memcpy(ip, remoteIp.data(), remoteIp.size());
+      ip[remoteIp.size()] = '\0';
 
       madlib__record__Record_t *request = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
 
@@ -103,13 +129,30 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
       headersField->name = (char*) "headers";
       headersField->value = headers;
 
-      madlib__record__Field_t **requestFields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 4);
+      madlib__record__Field_t *ipField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
+      ipField->name = (char*) "ip";
+      ipField->value = (void*) ip;
+
+      madlib__record__Field_t *queryParametersField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
+      queryParametersField->name = (char*) "queryParameters";
+      // NULL is fine as this is overriden by the addRoute function
+      queryParametersField->value = NULL;
+
+      madlib__record__Field_t *urlParametersField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
+      urlParametersField->name = (char*) "urlParameters";
+      // NULL is fine as this is overriden by the addRoute function
+      urlParametersField->value = NULL;
+
+      madlib__record__Field_t **requestFields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 5);
       requestFields[0] = urlField;
       requestFields[1] = bodyField;
       requestFields[2] = methodField;
       requestFields[3] = headersField;
+      requestFields[4] = ipField;
+      requestFields[5] = queryParametersField;
+      requestFields[6] = urlParametersField;
 
-      request->fieldCount = 4;
+      request->fieldCount = 7;
       request->fields = requestFields;
 
       PAP_t *callback = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
@@ -248,24 +291,3 @@ extern "C" {
 #ifdef __cplusplus
 }
 #endif
-
-
-void startServer(void *_) {
-  uWS::Loop::get(getLoop());
-  uWS::App()
-    .get("/hello", [](auto *res, auto *req) {
-      /* You can efficiently stream huge files too */
-      std::cout << "request" << std::endl;
-      res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("Hello HTTP!");
-    })
-    .any("/*", [](auto *res, auto *req) {
-      /* You can efficiently stream huge files too */
-      std::cout << "request" << std::endl;
-      res->writeHeader("Content-Type", "text/html; charset=utf-8")->end("404");
-    })
-    .listen(9001, [](auto *listenSocket) {
-      if (listenSocket) {
-          std::cout << "Listening on port " << 9001 << std::endl;
-      }
-    }).run();
-}

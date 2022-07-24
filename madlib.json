@@ -2,6 +2,9 @@
   "name": "MadServer",
   "main": "src/Main.mad",
   "madlibVersion": "0.13.0",
+  "importAliases": {
+    ".": "src"
+  },
   "staticLibs": [
     "./lib/build/libmadserver.a",
     "./lib/lib/libusocket.a"
