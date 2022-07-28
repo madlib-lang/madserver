@@ -11,6 +11,7 @@
 #include "http.hpp"
 #include "list.hpp"
 #include "record.hpp"
+#include "maybe.hpp"
 
 
 
@@ -177,10 +178,17 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
 extern "C" {
 #endif
 
+
   typedef struct madserver__server {
     madlib__record__Record_t *options;
-    uWS::App *uWSApp;
+    void *uWSApp;
   } madserver__server_t;
+
+
+  bool isSSL(madserver__server_t *server) {
+    madlib__maybe__Maybe_t *sslOptions = (madlib__maybe__Maybe_t*) madlib__record__internal__selectField((char*) "ssl", server->options);
+    return sslOptions->index == 0;
+  }
 
 
   madlib__record__Record_t *madserver__getOptions(madserver__server_t *server) {
@@ -194,96 +202,181 @@ extern "C" {
     // TODO: use GC_MALLOC for server and use a finalizer to delete the uWS::App it contains
     madserver__server_t *server = (madserver__server_t*) GC_MALLOC_UNCOLLECTABLE(sizeof(madserver__server_t));
     server->options = options;
-    server->uWSApp = new uWS::App;
+
+    madlib__maybe__Maybe_t *sslOptions = (madlib__maybe__Maybe_t*) madlib__record__internal__selectField((char*) "ssl", options);
+    if (sslOptions->index == madlib__maybe__Maybe_NOTHING_INDEX) {
+      server->uWSApp = (void*) new uWS::App;
+    } else {
+      madlib__record__Record_t *sslOptionsRecord = (madlib__record__Record_t *) sslOptions->data;
+      char *certificateFile = (char*) madlib__record__internal__selectField((char*) "certificateFile", sslOptionsRecord);
+      char *keyFile = (char*) madlib__record__internal__selectField((char*) "keyFile", sslOptionsRecord);
+
+      server->uWSApp = (void*) new uWS::SSLApp({ .cert_file_name = certificateFile, .key_file_name = keyFile });
+    }
+
     return server;
   }
 
   madserver__server_t *madserver__run(int64_t port, madserver__server_t *server) {
-    server->uWSApp->listen(port, [port](auto *listenSocket) {
-      if (!listenSocket) {
-        // TODO: handle error case, return an Either?
-      }
-    });
-    server->uWSApp->run();
-    return server;
+    if (isSSL(server)) {
+      uWS::SSLApp *app = (uWS::SSLApp*)server->uWSApp;
+      app->listen(port, [port](auto *listenSocket) {
+        if (!listenSocket) {
+          std::cout << "failed to listen" << std::endl;
+          // TODO: handle error case, return an Either?
+        }
+      });
+      app->run();
+      return server;
+    } else {
+      uWS::App *app = (uWS::App*)server->uWSApp;
+      app->listen(port, [port](auto *listenSocket) {
+        if (!listenSocket) {
+          std::cout << "failed to listen" << std::endl;
+          // TODO: handle error case, return an Either?
+        }
+      });
+      app->run();
+      return server;
+    }
   }
 
   madserver__server_t *madserver__addGetHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->get(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->get(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->get(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addPostHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->post(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+   if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->post(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->post(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addPutHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->put(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->put(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->put(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addPatchHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->patch(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->patch(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->patch(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addDeleteHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->del(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->del(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->del(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addHeadHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->head(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->head(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->head(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addConnectHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->connect(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->connect(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->connect(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addTraceHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->trace(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->trace(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->trace(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addOptionsHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->options(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->options(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->options(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }
 
   madserver__server_t *madserver__addAnyHandler(char *path, PAP_t *handler, madserver__server_t *server) {
-    server->uWSApp->any(std::string(path), [handler](auto *res, auto *req) {
-      madserver__requestHandler(handler, res, req);
-    });
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->any(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->any(std::string(path), [handler](auto *res, auto *req) {
+        madserver__requestHandler(handler, res, req);
+      });
+    }
 
     return server;
   }

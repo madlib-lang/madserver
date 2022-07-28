@@ -8,6 +8,8 @@
   },
   "staticLibs": [
     "./lib/build/libmadserver.a",
+    "./lib/lib/libssl.a",
+    "./lib/lib/libcrypto.a",
     "./lib/lib/libusocket.a"
   ]
 }

@@ -4,7 +4,7 @@ import type { Maybe } from "Maybe"
 import IO from "IO"
 import Date from "Date"
 import Url from "Url"
-import { fromMaybe } from "Maybe"
+import { fromMaybe, Nothing } from "Maybe"
 import { when } from "Function"
 import { fulfill } from "Wish"
 import {
@@ -41,8 +41,15 @@ export type LogLevel
   | WarningLevel
   | ErrorLevel
 
+DEFAULT_OPTIONS :: Options
+export DEFAULT_OPTIONS = {
+  verbose: false,
+  ssl: Nothing,
+}
+
 export alias Options = {
   verbose :: Boolean,
+  ssl :: Maybe { certificateFile :: String, keyFile :: String }
 }
 
 
@@ -127,7 +134,7 @@ addRoute = (methodName, routeFn, path, handler, server) => routeFn(
       .verbose,
       (opts) => {
         log(InfoLevel, `Incoming request for route '${methodName} ${path}'`)
-        log(InfoLevel, `Url requested: '${methodName} ${preparedRequest.url}'`)
+        log(InfoLevel, `Url requested: '${methodStr(request.method)} ${preparedRequest.url}'`)
         return opts
       },
       getOptions(server)
