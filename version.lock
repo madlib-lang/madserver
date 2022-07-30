@@ -1,16 +1,17 @@
 {
-  "buildHash": "2716ca03d17a1b2ce5baef743b7058ba",
+  "buildHash": "10562adf8c513ce4b65e7510d3d0b867",
   "jsApi": {
     "apiInstances": [],
     "apiAliases": {
-      "Options": "{ verbose :: Boolean }",
+      "Options": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
       "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
     },
     "apiInterfaces": {},
     "apiNames": {
       "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "create": "{ verbose :: Boolean } -> Server",
+      "create": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean } -> Server",
       "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "DEFAULT_OPTIONS": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
       "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
       "run": "Integer -> Server -> Server",
       "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
@@ -34,14 +35,15 @@
   "llvmApi": {
     "apiInstances": [],
     "apiAliases": {
-      "Options": "{ verbose :: Boolean }",
+      "Options": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
       "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
     },
     "apiInterfaces": {},
     "apiNames": {
       "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "create": "{ verbose :: Boolean } -> Server",
+      "create": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean } -> Server",
       "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "DEFAULT_OPTIONS": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
       "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
       "run": "Integer -> Server -> Server",
       "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
