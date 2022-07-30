@@ -26,7 +26,7 @@ type Server = Server
 export type Server
 
 
-alias IncomingRequest = {
+export alias IncomingRequest = {
   method :: Method,
   url :: String,
   headers :: List Header,
@@ -36,7 +36,7 @@ alias IncomingRequest = {
   urlParameters :: Dictionary String String,
 }
 
-type LogLevel
+export type LogLevel
   = InfoLevel
   | WarningLevel
   | ErrorLevel
@@ -60,7 +60,7 @@ logLevelToString = (logLevel) => where(logLevel) {
 
 
 log :: LogLevel -> String -> {}
-log = (logLevel, content) => {
+export log = (logLevel, content) => {
   date = Date.toISOString(Date.now({}))
   return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
 }

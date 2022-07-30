@@ -1,0 +1,66 @@
+{
+  "buildHash": "2716ca03d17a1b2ce5baef743b7058ba",
+  "jsApi": {
+    "apiInstances": [],
+    "apiAliases": {
+      "Options": "{ verbose :: Boolean }",
+      "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
+    },
+    "apiInterfaces": {},
+    "apiNames": {
+      "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "create": "{ verbose :: Boolean } -> Server",
+      "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "run": "Integer -> Server -> Server",
+      "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "connect": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "trace": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "any": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "put": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "log": "LogLevel -> String -> {}",
+      "head": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "route": "Method -> String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "get": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server"
+    },
+    "apiTypes": {
+      "LogLevel": [
+        "InfoLevel",
+        "WarningLevel",
+        "ErrorLevel"
+      ]
+    }
+  },
+  "llvmApi": {
+    "apiInstances": [],
+    "apiAliases": {
+      "Options": "{ verbose :: Boolean }",
+      "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
+    },
+    "apiInterfaces": {},
+    "apiNames": {
+      "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "create": "{ verbose :: Boolean } -> Server",
+      "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "run": "Integer -> Server -> Server",
+      "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "connect": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "trace": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "any": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "put": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "log": "LogLevel -> String -> {}",
+      "head": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "route": "Method -> String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
+      "get": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server"
+    },
+    "apiTypes": {
+      "LogLevel": [
+        "InfoLevel",
+        "WarningLevel",
+        "ErrorLevel"
+      ]
+    }
+  },
+  "versionHash": "25e64aa754c310d45c1e084d574c1bb0"
+}
