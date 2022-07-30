@@ -227,6 +227,11 @@ export run = (port, server) => {
         .verbose,
         () => {
           log(InfoLevel, `Verbose mode enabled`)
+          if (opts.ssl != Nothing) {
+            log(InfoLevel, "SSL on")
+          } else {
+            log(InfoLevel, "SSL off")
+          }
           log(InfoLevel, `Server started on port '${inspect(port)}'`)
           return opts
         },

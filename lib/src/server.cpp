@@ -157,7 +157,7 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
       request->fields = requestFields;
 
       PAP_t *callback = (PAP_t*) GC_MALLOC(sizeof(PAP_t));
-      callback->fn = (void*) madserver__handleResponse<true>;
+      callback->fn = (void*) madserver__handleResponse<SSL>;
       callback->arity = 2;
       callback->missingArgCount = 1;
 

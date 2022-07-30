@@ -3,7 +3,7 @@ if [ ! -d "lib/include" ]; then
   mkdir -p lib/include
   mkdir -p lib/lib
 
-   cd .buildlibs
+  cd .buildlibs
 
   # build openssl
   wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.5.zip
