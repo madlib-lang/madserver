@@ -11,5 +11,8 @@
     "./lib/lib/libssl.a",
     "./lib/lib/libcrypto.a",
     "./lib/lib/libusocket.a"
-  ]
+  ],
+  "hooks": {
+    "postInstall": "./scripts/build-lib"
+  }
 }
