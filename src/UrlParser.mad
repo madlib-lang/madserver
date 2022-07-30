@@ -1,0 +1,65 @@
+import String from "String"
+import List from "List"
+import Dictionary from "Dictionary"
+import { Just, Nothing } from "Maybe"
+import { notEquals } from "Function"
+
+
+extractQuery :: String -> String
+extractQuery = (url) => pipe(
+  String.toList,
+  List.dropWhile(notEquals('?')),
+  List.tail,
+  String.fromList
+)(url)
+
+
+dropQuery :: String -> String
+dropQuery = (url) => pipe(
+  String.toList,
+  List.takeWhile(notEquals('?')),
+  String.fromList
+)(url)
+
+
+parseQueryParameters :: String -> Dictionary String String
+export parseQueryParameters = (url) => pipe(
+  extractQuery,
+  String.split("&"),
+  List.mapMaybe(
+    pipe(
+      String.split("="),
+      where {
+        [key, value] =>
+          Just(#[key, value])
+
+        [key] =>
+          Just(#[key, ""])
+
+        _ =>
+          Nothing
+      }
+    )
+  ),
+  Dictionary.fromList
+)(url)
+
+
+parseUrlParameters :: String -> String -> Dictionary String String
+export parseUrlParameters = (path, url) => pipe(
+  dropQuery,
+  String.split("/"),
+  List.zip(String.split("/", path)),
+  List.mapMaybe(
+    where {
+      #[potentialKey, value] =>
+        String.charAt(0, potentialKey) == Just(':')
+          ? Just(#[String.drop(1, potentialKey), value])
+          : Nothing
+
+      _ =>
+        Nothing
+    }
+  ),
+  Dictionary.fromList
+)(url)

@@ -1,0 +1,23 @@
+if [ ! -d "lib/include" ]; then
+  mkdir -p .buildlibs
+  mkdir -p lib/include
+  mkdir -p lib/lib
+
+  cd .buildlibs
+  wget https://github.com/uNetworking/uWebSockets/archive/refs/tags/v20.14.0.zip
+  unzip v20.14.0.zip -d uwebsockets
+  cp uwebsockets/uWebSockets-20.14.0/src/* ../lib/include/
+
+  wget https://github.com/uNetworking/uSockets/archive/refs/tags/v0.8.1.zip
+  unzip v0.8.1.zip -d usockets
+  cd usockets/uSockets-0.8.1/
+  make CFLAGS="-I$(madlib config runtime-lib-headers-path)" WITH_LIBUV=1
+  cd ../..
+  cp -R usockets/uSockets-0.8.1/src/* ../lib/include/
+  cp -R usockets/uSockets-0.8.1/uSockets.a ../lib/lib/libusocket.a
+
+  cd ..
+  rm -rf .buildlibs
+fi
+
+make -C lib -j

@@ -1,3 +1,6 @@
 build
 node_modules
 HelloWorld.mad
+lib/lib
+lib/include
+.module_cache

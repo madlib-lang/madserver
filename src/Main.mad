@@ -1,24 +1,239 @@
-import { Maybe, Just, Nothing } from "Maybe"
+import type { Wish } from "Wish"
+import type { Response, Method, Header } from "Http"
+import type { Maybe } from "Maybe"
+import IO from "IO"
+import Date from "Date"
+import Url from "Url"
+import { fromMaybe } from "Maybe"
+import { when } from "Function"
+import { fulfill } from "Wish"
+import {
+  methodStr,
+  CONNECT,
+  DELETE,
+  GET,
+  HEAD,
+  OPTIONS,
+  PATCH,
+  POST,
+  PUT,
+  TRACE
+} from "Http"
+import { parseQueryParameters, parseUrlParameters } from "@/UrlParser"
 
-#- import express from 'express' -#
-#- const expressApp = express() -#
 
-data Request = Request
+type Server = Server
+export type Server
 
-data Response = Response
 
-send :: String -> Response -> Response
-export send = (message, response) => #- response.send(message) -#
+export alias IncomingRequest = {
+  method :: Method,
+  url :: String,
+  headers :: List Header,
+  body :: Maybe String,
+  ip :: String,
+  queryParameters :: Dictionary String String,
+  urlParameters :: Dictionary String String,
+}
 
-get :: String -> (Request -> Response -> Response) -> ()
-export get = (path, callback) => #- expressApp.get(path, callback) -#
+export type LogLevel
+  = InfoLevel
+  | WarningLevel
+  | ErrorLevel
 
-queryParamByName :: String -> Request -> Maybe String
-export queryParamByName = (paramName, request) => #- {
-  const param = request.query[paramName]
+export alias Options = {
+  verbose :: Boolean,
+}
 
-  return param ? Just(param) : Nothing;
-} -#
 
-listen :: Number -> (a -> b) -> ()
-export listen = (port, callback) => #- expressApp.listen(port, () => callback("")) -#
+logLevelToString :: LogLevel -> String
+logLevelToString = (logLevel) => where(logLevel) {
+  InfoLevel =>
+    IO.green("INFO")
+
+  WarningLevel =>
+    IO.yellow("WARNING")
+
+  ErrorLevel =>
+    IO.red("ERROR")
+}
+
+
+log :: LogLevel -> String -> {}
+export log = (logLevel, content) => {
+  date = Date.toISOString(Date.now({}))
+  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
+}
+
+
+create :: Options -> Server
+export create = extern "madserver__create"
+
+runFFI :: Integer -> Server -> Server
+runFFI = extern "madserver__run"
+
+getOptions :: Server -> Options
+getOptions = extern "madserver__getOptions"
+
+/**
+ * The first parameter is a function taking as first parameter the initial request
+ * and as second parameter the callback called when the Wish resolved. This handler
+ * is used by the c++ code in order to know when we're ready to write the response
+ * it then receives.
+ */
+getFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI = extern "madserver__addGetHandler"
+
+postFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+postFFI = extern "madserver__addPostHandler"
+
+putFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+putFFI = extern "madserver__addPutHandler"
+
+patchFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+patchFFI = extern "madserver__addPatchHandler"
+
+deleteFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+deleteFFI = extern "madserver__addDeleteHandler"
+
+headFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+headFFI = extern "madserver__addHeadHandler"
+
+connectFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+connectFFI = extern "madserver__addConnectHandler"
+
+traceFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+traceFFI = extern "madserver__addTraceHandler"
+
+optionsFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+optionsFFI = extern "madserver__addOptionsHandler"
+
+anyFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+anyFFI = extern "madserver__addAnyHandler"
+
+addRoute :: String -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+addRoute = (methodName, routeFn, path, handler, server) => routeFn(
+  path,
+  (request, cb) => {
+    decodedUrl = fromMaybe(request.url, Url.decode(request.url))
+    preparedRequest = {
+      ...request,
+      url: decodedUrl,
+      queryParameters: parseQueryParameters(decodedUrl),
+      urlParameters: parseUrlParameters(path, decodedUrl),
+    }
+
+    when(
+      .verbose,
+      (opts) => {
+        log(InfoLevel, `Incoming request for route '${methodName} ${path}'`)
+        log(InfoLevel, `Url requested: '${methodName} ${preparedRequest.url}'`)
+        return opts
+      },
+      getOptions(server)
+    )
+
+    return pipe(
+      handler,
+      fulfill(cb, cb)
+    )(preparedRequest)
+  },
+  server
+)
+
+getRouteFn :: Method -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server)
+getRouteFn = (method) => where(method) {
+  GET =>
+    getFFI
+
+  POST =>
+    postFFI
+
+  PUT =>
+    putFFI
+
+  PATCH =>
+    patchFFI
+
+  DELETE =>
+    deleteFFI
+
+  HEAD =>
+    headFFI
+
+  CONNECT =>
+    connectFFI
+
+  TRACE =>
+    traceFFI
+
+  OPTIONS =>
+    optionsFFI
+}
+
+route :: Method -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export route = (method, path, handler, server) => {
+  pipe(
+    getRouteFn,
+    addRoute(methodStr(method), $, path, handler, server)
+  )(method)
+
+  return server
+}
+
+any :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export any = addRoute("ANY", anyFFI)
+
+get :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export get = route(GET)
+
+post :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export post = route(POST)
+
+put :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export put = route(PUT)
+
+patch :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export patch = route(PATCH)
+
+delete :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export delete = route(DELETE)
+
+head :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export head = route(HEAD)
+
+connect :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export connect = route(CONNECT)
+
+trace :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export trace = route(TRACE)
+
+options :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+export options = route(OPTIONS)
+
+run :: Integer -> Server -> Server
+export run = (port, server) => {
+  setTimeout(
+    () => {
+      opts = getOptions(server)
+      when(
+        .verbose,
+        () => {
+          log(InfoLevel, `Verbose mode enabled`)
+          log(InfoLevel, `Server started on port '${inspect(port)}'`)
+          return opts
+        },
+        opts
+      )
+
+      return runFFI(port, server)
+    },
+    0
+  )
+
+  return server
+}
+
+
+setTimeout :: ({} -> a) -> Integer -> {}
+setTimeout = extern "__setTimeout__"
