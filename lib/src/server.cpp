@@ -45,7 +45,10 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         body->index = 1;
       } else {
         body->index = 0;
-        body->bodyData = (void*) bodyString.c_str();
+        char *bodyCopy = (char*) GC_MALLOC_ATOMIC(bodyString.length() + 1);
+        memcpy(bodyCopy, bodyString.c_str(), bodyString.length());
+        bodyCopy[bodyString.length()] = '\0';
+        body->bodyData = bodyCopy;
       }
 
       madlib__list__Node_t *headers = madlib__list__empty();
