@@ -11,7 +11,7 @@ if [ ! -d "lib/include" ]; then
   wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.5.zip
   unzip openssl-3.0.5.zip
   cd openssl-openssl-3.0.5
-  ./configure
+  ./Configure
   make
   cp -R include/* ../../lib/include/
   cp libssl.a ../../lib/lib/
