@@ -214,7 +214,7 @@ extern "C" {
       char *certificateFile = (char*) madlib__record__internal__selectField((char*) "certificateFile", sslOptionsRecord);
       char *keyFile = (char*) madlib__record__internal__selectField((char*) "keyFile", sslOptionsRecord);
 
-      server->uWSApp = (void*) new uWS::SSLApp({ .cert_file_name = certificateFile, .key_file_name = keyFile });
+      server->uWSApp = (void*) new uWS::SSLApp({ .key_file_name = keyFile, .cert_file_name = certificateFile });
     }
 
     return server;
