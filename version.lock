@@ -1,17 +1,17 @@
 {
-  "buildHash": "67777703f6eb4792a64a052e0a8ee094",
+  "buildHash": "1649964319e9642a47e10f410501ddf9",
   "jsApi": {
     "apiInstances": [],
     "apiAliases": {
-      "Options": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
+      "Options": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean }",
       "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
     },
     "apiInterfaces": {},
     "apiNames": {
       "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "create": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean } -> Server",
+      "create": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean } -> Server",
       "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "DEFAULT_OPTIONS": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
+      "DEFAULT_OPTIONS": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean }",
       "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
       "run": "Integer -> Server -> Server",
       "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
@@ -35,15 +35,15 @@
   "llvmApi": {
     "apiInstances": [],
     "apiAliases": {
-      "Options": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
+      "Options": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean }",
       "IncomingRequest": "{ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String }"
     },
     "apiInterfaces": {},
     "apiNames": {
       "patch": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "create": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean } -> Server",
+      "create": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean } -> Server",
       "post": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
-      "DEFAULT_OPTIONS": "{ ssl :: Maybe { certificateFile :: String, keyFile :: String }, verbose :: Boolean }",
+      "DEFAULT_OPTIONS": "{ ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String }, verbose :: Boolean }",
       "delete": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
       "run": "Integer -> Server -> Server",
       "options": "String -> ({ body :: Maybe String, headers :: List Header, ip :: String, method :: Method, queryParameters :: Dictionary String String, url :: String, urlParameters :: Dictionary String String } -> Wish { body :: String, headers :: List Header, status :: Integer } { body :: String, headers :: List Header, status :: Integer }) -> Server -> Server",
@@ -64,5 +64,5 @@
       ]
     }
   },
-  "versionHash": "fbacc30a1f288ebf360ad2de66710082"
+  "versionHash": "47cd76e43f74bbc2e1baaf194d07e1fa"
 }

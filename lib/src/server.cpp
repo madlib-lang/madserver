@@ -213,8 +213,28 @@ extern "C" {
       madlib__record__Record_t *sslOptionsRecord = (madlib__record__Record_t *) sslOptions->data;
       char *certificateFile = (char*) madlib__record__internal__selectField((char*) "certificateFile", sslOptionsRecord);
       char *keyFile = (char*) madlib__record__internal__selectField((char*) "keyFile", sslOptionsRecord);
+      madlib__maybe__Maybe_t *maybePassphrase = (madlib__maybe__Maybe_t*) madlib__record__internal__selectField((char*) "passphrase", sslOptionsRecord);
+      madlib__maybe__Maybe_t *maybeCaFile = (madlib__maybe__Maybe_t*) madlib__record__internal__selectField((char*) "caFile", sslOptionsRecord);
 
-      server->uWSApp = (void*) new uWS::SSLApp({ .key_file_name = keyFile, .cert_file_name = certificateFile });
+      char *passphrase = (char*) (
+        maybePassphrase->index == madlib__maybe__Maybe_NOTHING_INDEX
+          ? NULL
+          : maybePassphrase->data
+      );
+
+      char *caFile = (char*) (
+        maybeCaFile->index == madlib__maybe__Maybe_NOTHING_INDEX
+          ? NULL
+          : maybeCaFile->data
+      );
+
+      server->uWSApp = (void*) new uWS::SSLApp({
+        .key_file_name = keyFile,
+        .cert_file_name = certificateFile,
+        .passphrase = passphrase,
+        .dh_params_file_name = NULL,
+        .ca_file_name = caFile
+      });
     }
 
     return server;

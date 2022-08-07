@@ -49,7 +49,12 @@ export DEFAULT_OPTIONS = {
 
 export alias Options = {
   verbose :: Boolean,
-  ssl :: Maybe { certificateFile :: String, keyFile :: String }
+  ssl :: Maybe {
+    certificateFile :: String,
+    keyFile :: String,
+    passphrase :: Maybe String,
+    caFile :: Maybe String,
+  }
 }
 
 
