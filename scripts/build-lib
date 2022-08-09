@@ -7,18 +7,6 @@ if [ ! -d "lib/include" ]; then
 
   cd .buildlibs
 
-  # build openssl
-  wget https://github.com/openssl/openssl/archive/refs/tags/openssl-3.0.5.zip
-  unzip openssl-3.0.5.zip
-  cd openssl-openssl-3.0.5
-  ./Configure
-  make
-  cp -R include/* ../../lib/include/
-  cp libssl.a ../../lib/lib/
-  cp libcrypto.a ../../lib/lib/
-  cd ..
-
-
   # install uWebSockets
   wget https://github.com/uNetworking/uWebSockets/archive/refs/tags/v20.14.0.zip
   unzip v20.14.0.zip -d uwebsockets
@@ -37,4 +25,5 @@ if [ ! -d "lib/include" ]; then
   rm -rf .buildlibs
 fi
 
+# build libmadserver.a
 make -C lib -j

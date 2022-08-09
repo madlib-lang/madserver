@@ -1,6 +1,6 @@
 {
   "name": "MadServer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "madlibVersion": "0.13.0",
   "main": "src/Main.mad",
   "importAliases": {
@@ -8,8 +8,6 @@
   },
   "staticLibs": [
     "./lib/build/libmadserver.a",
-    "./lib/lib/libssl.a",
-    "./lib/lib/libcrypto.a",
     "./lib/lib/libusocket.a"
   ],
   "hooks": {
