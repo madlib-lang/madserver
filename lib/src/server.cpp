@@ -35,7 +35,66 @@ template<bool SSL> void madserver__handleResponse(uWS::HttpResponse<SSL> *res, m
 
 template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpResponse<SSL> *res, uWS::HttpRequest *req) {
   std::string bodyString;
-  res->onData([handler, res, req, bodyString = std::move(bodyString)](std::string_view data, bool last) mutable {
+
+  madlib__list__Node_t *headers = madlib__list__empty();
+  auto headerIt = req->begin();
+  while (headerIt != req->end()) {
+    std::string_view headerName = (*headerIt).first;
+    std::string_view headerValue = (*headerIt).second;
+
+    madlib__http__Header_t *header = (madlib__http__Header_t*) GC_MALLOC(sizeof(madlib__http__Header_t));
+    header->index = 0;
+    header->name = (char*) GC_MALLOC_ATOMIC(headerName.size() + 1);
+    memcpy(header->name, headerName.data(), headerName.size());
+    header->name[headerName.size()] = '\0';
+
+    header->value = (char*) GC_MALLOC_ATOMIC(headerValue.size() + 1);
+    memcpy(header->value, headerValue.data(), headerValue.size());
+    header->value[headerValue.size()] = '\0';
+
+    headers = madlib__list__push(header, headers);
+
+    ++headerIt;
+  }
+
+  madlib__http__Method_t *method = (madlib__http__Method_t*) GC_MALLOC(sizeof(madlib__http__Method_t));
+  if (req->getMethod() == "get") {
+      method->methodIndex = 2;
+  } else if (req->getMethod() == "post") {
+      method->methodIndex = 6;
+  } else if (req->getMethod() == "put") {
+      method->methodIndex = 7;
+  } else if (req->getMethod() == "patch") {
+      method->methodIndex = 5;
+  } else if (req->getMethod() == "delete") {
+      method->methodIndex = 1;
+  } else if (req->getMethod() == "head") {
+      method->methodIndex = 3;
+  } else if (req->getMethod() == "connect") {
+      method->methodIndex = 0;
+  } else if (req->getMethod() == "trace") {
+      method->methodIndex = 8;
+  } else if (req->getMethod() == "options") {
+      method->methodIndex = 4;
+  } else {
+    // we default to GET if we don't know
+    method->methodIndex = 2;
+  }
+
+  char *url;
+  if (!req->getQuery().empty()) {
+    url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + req->getQuery().size() + 2);
+    memcpy(url, req->getUrl().data(), req->getUrl().size());
+    url[req->getUrl().size()] = '?';
+    memcpy(url + req->getUrl().size() + 1, req->getQuery().data(), req->getQuery().size());
+    url[req->getUrl().size() + req->getQuery().size() + 1] = '\0';
+  } else {
+    url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + 1);
+    memcpy(url, req->getUrl().data(), req->getUrl().size());
+    url[req->getUrl().size()] = '\0';
+  }
+
+  res->onData([handler, res, bodyString = std::move(bodyString), headers, url, method](std::string_view data, bool last) mutable {
     bodyString.append(data.data(), data.length());
 
     if (last) {
@@ -49,64 +108,6 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         memcpy(bodyCopy, bodyString.c_str(), bodyString.length());
         bodyCopy[bodyString.length()] = '\0';
         body->bodyData = bodyCopy;
-      }
-
-      madlib__list__Node_t *headers = madlib__list__empty();
-      auto headerIt = req->begin();
-      while (headerIt != req->end()) {
-        std::string_view headerName = (*headerIt).first;
-        std::string_view headerValue = (*headerIt).second;
-
-        madlib__http__Header_t *header = (madlib__http__Header_t*) GC_MALLOC(sizeof(madlib__http__Header_t));
-        header->index = 0;
-        header->name = (char*) GC_MALLOC_ATOMIC(headerName.size() + 1);
-        memcpy(header->name, headerName.data(), headerName.size());
-        header->name[headerName.size()] = '\0';
-
-        header->value = (char*) GC_MALLOC_ATOMIC(headerValue.size() + 1);
-        memcpy(header->value, headerValue.data(), headerValue.size());
-        header->value[headerValue.size()] = '\0';
-
-        headers = madlib__list__push(header, headers);
-
-        ++headerIt;
-      }
-
-      madlib__http__Method_t *method = (madlib__http__Method_t*) GC_MALLOC(sizeof(madlib__http__Method_t));
-      if (req->getMethod() == "get") {
-          method->methodIndex = 2;
-      } else if (req->getMethod() == "post") {
-          method->methodIndex = 6;
-      } else if (req->getMethod() == "put") {
-          method->methodIndex = 7;
-      } else if (req->getMethod() == "patch") {
-          method->methodIndex = 5;
-      } else if (req->getMethod() == "delete") {
-          method->methodIndex = 1;
-      } else if (req->getMethod() == "head") {
-          method->methodIndex = 3;
-      } else if (req->getMethod() == "connect") {
-          method->methodIndex = 0;
-      } else if (req->getMethod() == "trace") {
-          method->methodIndex = 8;
-      } else if (req->getMethod() == "options") {
-          method->methodIndex = 4;
-      } else {
-        // we default to GET if we don't know
-        method->methodIndex = 2;
-      }
-
-      char *url;
-      if (!req->getQuery().empty()) {
-        url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + req->getQuery().size() + 2);
-        memcpy(url, req->getUrl().data(), req->getUrl().size());
-        url[req->getUrl().size()] = '?';
-        memcpy(url + req->getUrl().size() + 1, req->getQuery().data(), req->getQuery().size());
-        url[req->getUrl().size() + req->getQuery().size() + 1] = '\0';
-      } else {
-        url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + 1);
-        memcpy(url, req->getUrl().data(), req->getUrl().size());
-        url[req->getUrl().size()] = '\0';
       }
 
       // ip address, most likely v6
