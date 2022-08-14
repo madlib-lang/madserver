@@ -1,16 +1,16 @@
 {
   "name": "MadServer",
-  "version": "1.0.2",
+  "version": "1.0.3",
   "madlibVersion": "0.13.0",
   "main": "src/Main.mad",
   "importAliases": {
     ".": "src"
   },
+  "hooks": {
+    "postInstall": "./scripts/build-lib"
+  },
   "staticLibs": [
     "./lib/build/libmadserver.a",
     "./lib/lib/libusocket.a"
-  ],
-  "hooks": {
-    "postInstall": "./scripts/build-lib"
-  }
+  ]
 }

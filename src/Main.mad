@@ -61,20 +61,20 @@ export alias Options = {
 logLevelToString :: LogLevel -> String
 logLevelToString = (logLevel) => where(logLevel) {
   InfoLevel =>
-    IO.green("INFO")
+    "INFO"
 
   WarningLevel =>
-    IO.yellow("WARNING")
+    "WARNING"
 
   ErrorLevel =>
-    IO.red("ERROR")
+    "ERROR"
 }
 
 
 log :: LogLevel -> String -> {}
 export log = (logLevel, content) => {
   date = Date.toISOString(Date.now({}))
-  return IO.putLine(`[${logLevelToString(logLevel)}] ${IO.grey(date)} ${content}`)
+  return IO.putLine(`[${logLevelToString(logLevel)}] ${date} ${content}`)
 }
 
 
