@@ -158,12 +158,12 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
       urlParametersField->value = NULL;
 
       madlib__record__Field_t **requestFields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 5);
-      requestFields[0] = urlField;
-      requestFields[1] = bodyField;
-      requestFields[2] = methodField;
-      requestFields[3] = headersField;
-      requestFields[4] = ipField;
-      requestFields[5] = queryParametersField;
+      requestFields[0] = bodyField;
+      requestFields[1] = headersField;
+      requestFields[2] = ipField;
+      requestFields[3] = methodField;
+      requestFields[4] = queryParametersField;
+      requestFields[5] = urlField;
       requestFields[6] = urlParametersField;
 
       request->fieldCount = 7;
