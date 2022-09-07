@@ -19,6 +19,8 @@ template<bool SSL> void madserver__handleResponse(uWS::HttpResponse<SSL> *res, m
   char *body = (char*) madlib__record__internal__selectField((char*) "body", response);
   if (!body) {
     std::cout << "body NULL" << std::endl;
+    printf("available fields:");
+    for (int i = 0; i < response->fieldCount; i++) { printf("%s", response->fields[i]->name); }
     body = (char*)"";
   }
 
