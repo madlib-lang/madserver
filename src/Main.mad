@@ -147,7 +147,7 @@ addRoute = (methodName, routeFn, path, handler, server) => routeFn(
 
     return pipe(
       handler,
-      fulfill(cb, cb)
+      fulfill(pipe(IO.trace("bad response"), cb), pipe(IO.trace("good response"), cb))
     )(preparedRequest)
   },
   server
