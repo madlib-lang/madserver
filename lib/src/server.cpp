@@ -16,16 +16,10 @@
 
 
 template<bool SSL> void madserver__handleResponse(uWS::HttpResponse<SSL> *res, madlib__record__Record_t *response) {
-  char *body = (char*) madlib__record__internal__selectField((char*) "body", response);
-  if (!body) {
-    std::cout << "body NULL" << std::endl;
-    printf("available fields:");
-    for (int i = 0; i < response->fieldCount; i++) { printf("%s", response->fields[i]->name); }
-    body = (char*)"";
-  }
+  char *body = (char*) response->fields[0]->value;
 
-  int64_t status = (int64_t) madlib__record__internal__selectField((char*) "status", response);
-  madlib__list__Node_t *headers = (madlib__list__Node_t*) madlib__record__internal__selectField((char*) "headers", response);
+  int64_t status = (int64_t) response->fields[2]->value;
+  madlib__list__Node_t *headers = (madlib__list__Node_t*) response->fields[1]->value;
 
   res->writeStatus(std::to_string(status));
 
@@ -105,10 +99,6 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
     bodyString.append(data.data(), data.length());
 
     if (last) {
-      std::cout << "url: " << url << std::endl;
-      std::cout << "headers: " << headers << std::endl;
-      std::cout << "body: " << bodyString << std::endl;
-
       // build body:
       madlib__http__Body_t *body = (madlib__http__Body_t*) GC_MALLOC(sizeof(madlib__http__Body_t));
       if (bodyString.empty()) {
@@ -159,7 +149,7 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
       // NULL is fine as this is overriden by the addRoute function
       urlParametersField->value = NULL;
 
-      madlib__record__Field_t **requestFields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 5);
+      madlib__record__Field_t **requestFields = (madlib__record__Field_t**) GC_MALLOC(sizeof(madlib__record__Field_t*) * 7);
       requestFields[0] = bodyField;
       requestFields[1] = headersField;
       requestFields[2] = ipField;
