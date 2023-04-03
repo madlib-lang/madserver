@@ -30,7 +30,7 @@ export alias IncomingRequest = {
   method :: Method,
   url :: String,
   headers :: List Header,
-  body :: Maybe String,
+  body :: ByteArray,
   ip :: String,
   queryParameters :: Dictionary String String,
   urlParameters :: Dictionary String String,
@@ -93,37 +93,37 @@ getOptions = extern "madserver__getOptions"
  * is used by the c++ code in order to know when we're ready to write the response
  * it then receives.
  */
-getFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+getFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 getFFI = extern "madserver__addGetHandler"
 
-postFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+postFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 postFFI = extern "madserver__addPostHandler"
 
-putFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+putFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 putFFI = extern "madserver__addPutHandler"
 
-patchFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+patchFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 patchFFI = extern "madserver__addPatchHandler"
 
-deleteFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+deleteFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 deleteFFI = extern "madserver__addDeleteHandler"
 
-headFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+headFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 headFFI = extern "madserver__addHeadHandler"
 
-connectFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+connectFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 connectFFI = extern "madserver__addConnectHandler"
 
-traceFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+traceFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 traceFFI = extern "madserver__addTraceHandler"
 
-optionsFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+optionsFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 optionsFFI = extern "madserver__addOptionsHandler"
 
-anyFFI :: String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server
+anyFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 anyFFI = extern "madserver__addAnyHandler"
 
-addRoute :: String -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server) -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+addRoute :: String -> (String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server) -> String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 addRoute = (methodName, routeFn, path, handler, server) => routeFn(
   path,
   (request, cb) => {
@@ -153,7 +153,7 @@ addRoute = (methodName, routeFn, path, handler, server) => routeFn(
   server
 )
 
-getRouteFn :: Method -> (String -> (IncomingRequest -> (Response String -> {}) -> {}) -> Server -> Server)
+getRouteFn :: Method -> (String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server)
 getRouteFn = (method) => where(method) {
   GET =>
     getFFI
@@ -183,7 +183,7 @@ getRouteFn = (method) => where(method) {
     optionsFFI
 }
 
-route :: Method -> String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+route :: Method -> String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export route = (method, path, handler, server) => {
   pipe(
     getRouteFn,
@@ -193,34 +193,34 @@ export route = (method, path, handler, server) => {
   return server
 }
 
-any :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+any :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export any = addRoute("ANY", anyFFI)
 
-get :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+get :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export get = route(GET)
 
-post :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+post :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export post = route(POST)
 
-put :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+put :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export put = route(PUT)
 
-patch :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+patch :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export patch = route(PATCH)
 
-delete :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+delete :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export delete = route(DELETE)
 
-head :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+head :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export head = route(HEAD)
 
-connect :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+connect :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export connect = route(CONNECT)
 
-trace :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+trace :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export trace = route(TRACE)
 
-options :: String -> (IncomingRequest -> Wish (Response String) (Response String)) -> Server -> Server
+options :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export options = route(OPTIONS)
 
 run :: Integer -> Server -> Server

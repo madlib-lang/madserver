@@ -12,11 +12,12 @@
 #include "list.hpp"
 #include "record.hpp"
 #include "maybe.hpp"
+#include "bytearray.hpp"
 
 
 
 template<bool SSL> void madserver__handleResponse(uWS::HttpResponse<SSL> *res, madlib__record__Record_t *response) {
-  char *body = (char*) response->fields[0]->value;
+  madlib__bytearray__ByteArray_t *body = (madlib__bytearray__ByteArray_t*) response->fields[0]->value;
 
   int64_t status = (int64_t) response->fields[2]->value;
   madlib__list__Node_t *headers = (madlib__list__Node_t*) response->fields[1]->value;
@@ -30,7 +31,7 @@ template<bool SSL> void madserver__handleResponse(uWS::HttpResponse<SSL> *res, m
     headers = headers->next;
   }
 
-  res->end(body);
+  res->end(std::string_view((const char*) body->bytes, body->length));
 }
 
 
@@ -100,15 +101,15 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
 
     if (last) {
       // build body:
-      madlib__http__Body_t *body = (madlib__http__Body_t*) GC_MALLOC(sizeof(madlib__http__Body_t));
+      madlib__bytearray__ByteArray_t *body = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
       if (bodyString.empty()) {
-        body->index = 1;
+        body->length = 0;
       } else {
-        body->index = 0;
-        char *bodyCopy = (char*) GC_MALLOC_ATOMIC(bodyString.length() + 1);
+        body->length = bodyString.length();
+        unsigned char *bodyCopy = (unsigned char*) GC_MALLOC_ATOMIC(bodyString.length());
         memcpy(bodyCopy, bodyString.c_str(), bodyString.length());
         bodyCopy[bodyString.length()] = '\0';
-        body->bodyData = bodyCopy;
+        body->bytes = bodyCopy;
       }
 
       // ip address, most likely v6
