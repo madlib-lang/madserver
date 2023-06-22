@@ -16,7 +16,7 @@ if [ ! -d "lib/include" ]; then
   wget https://github.com/uNetworking/uSockets/archive/refs/tags/v0.8.1.zip
   unzip v0.8.1.zip -d usockets
   cd usockets/uSockets-0.8.1/
-  make CFLAGS="-I../../../lib/include -I$(madlib config runtime-lib-headers-path)" WITH_LIBUV=1 WITH_OPENSSL=1
+  make CFLAGS="-I$(madlib config runtime-lib-headers-path)" WITH_LIBUV=1 WITH_OPENSSL=1
   cd ../..
   cp -R usockets/uSockets-0.8.1/src/* ../lib/include/
   cp -R usockets/uSockets-0.8.1/uSockets.a ../lib/lib/libusocket.a
