@@ -83,20 +83,20 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
     method->methodIndex = 2;
   }
 
-  char *url;
+  char *path;
   if (!req->getQuery().empty()) {
-    url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + req->getQuery().size() + 2);
-    memcpy(url, req->getUrl().data(), req->getUrl().size());
-    url[req->getUrl().size()] = '?';
-    memcpy(url + req->getUrl().size() + 1, req->getQuery().data(), req->getQuery().size());
-    url[req->getUrl().size() + req->getQuery().size() + 1] = '\0';
+    path = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + req->getQuery().size() + 2);
+    memcpy(path, req->getUrl().data(), req->getUrl().size());
+    path[req->getUrl().size()] = '?';
+    memcpy(path + req->getUrl().size() + 1, req->getQuery().data(), req->getQuery().size());
+    path[req->getUrl().size() + req->getQuery().size() + 1] = '\0';
   } else {
-    url = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + 1);
-    memcpy(url, req->getUrl().data(), req->getUrl().size());
-    url[req->getUrl().size()] = '\0';
+    path = (char *) GC_MALLOC_ATOMIC(req->getUrl().size() + 1);
+    memcpy(path, req->getUrl().data(), req->getUrl().size());
+    path[req->getUrl().size()] = '\0';
   }
 
-  res->onData([handler, res, bodyString = std::move(bodyString), headers, url, method](std::string_view data, bool last) mutable {
+  res->onData([handler, res, bodyString = std::move(bodyString), headers, path, method](std::string_view data, bool last) mutable {
     bodyString.append(data.data(), data.length());
 
     if (last) {
@@ -120,9 +120,9 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
 
       madlib__record__Record_t *request = (madlib__record__Record_t*) GC_MALLOC(sizeof(madlib__record__Record_t));
 
-      madlib__record__Field_t *urlField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
-      urlField->name = (char*) "url";
-      urlField->value = url;
+      madlib__record__Field_t *pathField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
+      pathField->name = (char*) "path";
+      pathField->value = path;
 
       madlib__record__Field_t *methodField = (madlib__record__Field_t*) GC_MALLOC(sizeof(madlib__record__Field_t));
       methodField->name = (char*) "method";
@@ -155,8 +155,8 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
       requestFields[1] = headersField;
       requestFields[2] = ipField;
       requestFields[3] = methodField;
-      requestFields[4] = queryParametersField;
-      requestFields[5] = urlField;
+      requestFields[4] = pathField;
+      requestFields[5] = queryParametersField;
       requestFields[6] = urlParametersField;
 
       request->fieldCount = 7;

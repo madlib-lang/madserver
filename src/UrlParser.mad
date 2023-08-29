@@ -56,9 +56,6 @@ export parseUrlParameters = (path, url) => pipe(
         String.charAt(0, potentialKey) == Just(':')
           ? Just(#[String.drop(1, potentialKey), value])
           : Nothing
-
-      _ =>
-        Nothing
     }
   ),
   Dictionary.fromList

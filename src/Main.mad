@@ -28,7 +28,7 @@ export type Server
 
 export alias IncomingRequest = {
   method :: Method,
-  url :: String,
+  path :: String,
   headers :: List Header,
   body :: ByteArray,
   ip :: String,
@@ -127,25 +127,25 @@ addRoute :: String -> (String -> (IncomingRequest -> (Response ByteArray -> {}) 
 addRoute = (methodName, routeFn, path, handler, server) => routeFn(
   path,
   (request, cb) => {
-    decodedUrl = fromMaybe(request.url, Url.decode(request.url))
+    decodedPath = fromMaybe(request.path, Url.decode(request.path))
     preparedRequest = {
       ...request,
-      url: decodedUrl,
-      queryParameters: parseQueryParameters(decodedUrl),
-      urlParameters: parseUrlParameters(path, decodedUrl),
+      path: decodedPath,
+      queryParameters: parseQueryParameters(decodedPath),
+      urlParameters: parseUrlParameters(path, decodedPath),
     }
 
     when(
       .verbose,
       (opts) => {
         log(InfoLevel, `Incoming request for route '${methodName} ${path}'`)
-        log(InfoLevel, `Url requested: '${methodStr(request.method)} ${preparedRequest.url}'`)
+        log(InfoLevel, `Url requested: '${methodStr(request.method)} ${preparedRequest.path}'`)
         return opts
       },
       getOptions(server)
     )
 
-    return pipe(
+    pipe(
       handler,
       fulfill(cb, cb)
     )(preparedRequest)
@@ -237,7 +237,7 @@ export run = (port, server) => {
           } else {
             log(InfoLevel, "SSL off")
           }
-          log(InfoLevel, `Server started on port '${inspect(port)}'`)
+          log(InfoLevel, `Server started on port '${show(port)}'`)
           return opts
         },
         opts

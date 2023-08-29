@@ -1,7 +1,7 @@
 {
   "name": "MadServer",
-  "version": "2.0.2",
-  "madlibVersion": "0.13.0",
+  "version": "3.0.0",
+  "madlibVersion": "0.21.1",
   "main": "src/Main.mad",
   "importAliases": {
     ".": "src"
