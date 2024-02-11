@@ -25,6 +25,54 @@ import { parseQueryParameters, parseUrlParameters } from "@/UrlParser"
 type Server = Server
 export type Server
 
+alias WebSocketHandlerRecord = {
+  onConnect :: WebSocket -> {},
+  onMessage :: WebSocket -> ByteArray -> {},
+  onDisconnect :: WebSocket -> {},
+}
+
+type WebSocketHandler = WebSocketHandler(WebSocketHandlerRecord)
+
+unwrapWebSocketHandler = where {
+  WebSocketHandler(r) =>
+    r
+}
+
+DEFAULT_WEB_SOCKET_HANDLER :: WebSocketHandler
+DEFAULT_WEB_SOCKET_HANDLER = WebSocketHandler({
+  onConnect: () => {},
+  onDisconnect: () => {},
+  onMessage: (_, _) => {},
+})
+
+onConnect :: (WebSocket -> {}) -> WebSocketHandler -> WebSocketHandler
+export onConnect = (connectionHandler, wsHandler) => pipe(
+  unwrapWebSocketHandler,
+  (r) => ({
+    ...r,
+    onConnect: connectionHandler
+  }),
+  WebSocketHandler,
+)(wsHandler)
+
+
+onMessage :: (WebSocket -> ByteArray -> {}) -> WebSocketHandler -> WebSocketHandler
+export onMessage = (messageHandler, wsHandler) => pipe(
+  unwrapWebSocketHandler,
+  (r) => ({
+    ...r,
+    onMessage: messageHandler
+  }),
+  WebSocketHandler,
+)(wsHandler)
+
+send :: ByteArray -> WebSocket -> {}
+export send = extern "madserver__sendFFI"
+
+
+type WebSocket = Websocket
+export type WebSocket
+
 
 export alias IncomingRequest = {
   method :: Method,
@@ -222,6 +270,12 @@ export trace = route(TRACE)
 
 options :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
 export options = route(OPTIONS)
+
+wsFFI :: String -> WebSocketHandlerRecord -> Server -> Server
+export wsFFI = extern "madserver__addWebSocketHandler"
+
+ws :: String -> (WebSocketHandler -> WebSocketHandler) -> Server -> Server
+export ws = (path, handlerFn) => wsFFI(path, pipe(handlerFn, unwrapWebSocketHandler)(DEFAULT_WEB_SOCKET_HANDLER))
 
 run :: Integer -> Server -> Server
 export run = (port, server) => {

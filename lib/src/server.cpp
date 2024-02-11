@@ -1,6 +1,7 @@
 #include "App.h"
 #include "Loop.h"
 #include "HttpResponse.h"
+#include "WebSocket.h"
 
 #include "event-loop.hpp"
 #include "gc.h"
@@ -106,7 +107,7 @@ template<bool SSL> void madserver__requestHandler(PAP_t *handler, uWS::HttpRespo
         body->length = 0;
       } else {
         body->length = bodyString.length();
-        unsigned char *bodyCopy = (unsigned char*) GC_MALLOC_ATOMIC(bodyString.length());
+        unsigned char *bodyCopy = (unsigned char*) GC_MALLOC_ATOMIC(bodyString.length() + 1);
         memcpy(bodyCopy, bodyString.c_str(), bodyString.length());
         bodyCopy[bodyString.length()] = '\0';
         body->bytes = bodyCopy;
@@ -265,6 +266,38 @@ extern "C" {
       app->run();
       return server;
     }
+  }
+
+  madserver__server_t *madserver__addWebSocketHandler(char *path, madlib__record__Record_t *handler, madserver__server_t *server) {
+    ((uWS::App*)server->uWSApp)->ws<void*>(std::string(path), {
+      .open = [handler](auto *ws) {
+        __applyPAP__(handler->fields[0]->value, 1, (void*)ws);
+      },
+      .message = [handler](auto *ws, std::string_view message, uWS::OpCode opCode) {
+        if (opCode == uWS::BINARY) {
+          madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+          msg->length = message.length();
+          unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length());
+          memcpy(messageBytes, message.data(), message.length());
+          msg->bytes = messageBytes;
+          __applyPAP__(handler->fields[2]->value, 2, (void*)ws, msg);
+        } else if (opCode == uWS::TEXT) {
+          madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+          msg->length = message.length();
+          unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length() + 1);
+          memcpy(messageBytes, message.data(), message.length());
+          messageBytes[message.length()] = '\0';
+          msg->bytes = messageBytes;
+          __applyPAP__(handler->fields[2]->value, 2, (void*)ws, msg);
+        }
+      }
+    });
+
+    return server;
+  }
+
+  void madserver__sendFFI(madlib__bytearray__ByteArray_t *data, uWS::WebSocket<false, true, void*> *ws) {
+    ws->send(std::string_view((const char*) data->bytes, data->length));
   }
 
   madserver__server_t *madserver__addGetHandler(char *path, PAP_t *handler, madserver__server_t *server) {
