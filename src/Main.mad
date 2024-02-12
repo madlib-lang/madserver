@@ -26,9 +26,9 @@ type Server = Server
 export type Server
 
 alias WebSocketHandlerRecord = {
-  onConnect :: WebSocket -> {},
+  onConnected :: WebSocket -> {},
   onMessage :: WebSocket -> ByteArray -> {},
-  onDisconnect :: WebSocket -> {},
+  onDisconnected :: WebSocket -> {},
 }
 
 type WebSocketHandler = WebSocketHandler(WebSocketHandlerRecord)
@@ -40,17 +40,17 @@ unwrapWebSocketHandler = where {
 
 DEFAULT_WEB_SOCKET_HANDLER :: WebSocketHandler
 DEFAULT_WEB_SOCKET_HANDLER = WebSocketHandler({
-  onConnect: () => {},
-  onDisconnect: () => {},
+  onConnected: () => {},
+  onDisconnected: () => {},
   onMessage: (_, _) => {},
 })
 
-onConnect :: (WebSocket -> {}) -> WebSocketHandler -> WebSocketHandler
-export onConnect = (connectionHandler, wsHandler) => pipe(
+onConnected :: (WebSocket -> {}) -> WebSocketHandler -> WebSocketHandler
+export onConnected = (connectionHandler, wsHandler) => pipe(
   unwrapWebSocketHandler,
   (r) => ({
     ...r,
-    onConnect: connectionHandler
+    onConnected: connectionHandler
   }),
   WebSocketHandler,
 )(wsHandler)
@@ -72,6 +72,9 @@ export send = extern "madserver__sendFFI"
 
 type WebSocket = Websocket
 export type WebSocket
+
+getSocketId :: WebSocket -> Integer
+export getSocketId = extern "madserver__getSocketIdFFI"
 
 
 export alias IncomingRequest = {

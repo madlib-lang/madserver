@@ -274,6 +274,14 @@ extern "C" {
     }
   }
 
+  int64_t madserver__getSocketIdFFI(madserver__socket_t *madSocket) {
+    if (madSocket->isSSL) {
+      return (int64_t) ((uWS::WebSocket<true, true, void*>*) madSocket->uWSSocket)->getNativeHandle();
+    } else {
+      return (int64_t) ((uWS::WebSocket<false, true, void*>*) madSocket->uWSSocket)->getNativeHandle();
+    }
+  }
+
   madserver__server_t *madserver__addWebSocketHandler(char *path, madlib__record__Record_t *handler, madserver__server_t *server) {
     auto open = [handler, server](auto *ws) {
       madserver__socket_t* socket = (madserver__socket_t*) GC_MALLOC(sizeof(madserver__socket_t));
