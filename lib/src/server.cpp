@@ -192,6 +192,12 @@ extern "C" {
   } madserver__server_t;
 
 
+  typedef struct madserver__socket {
+    bool isSSL;
+    void *uWSSocket;
+  } madserver__socket_t;
+
+
   bool isSSL(madserver__server_t *server) {
     madlib__maybe__Maybe_t *sslOptions = (madlib__maybe__Maybe_t*) madlib__record__internal__selectField((char*) "ssl", server->options);
     return sslOptions->index == 0;
@@ -269,35 +275,59 @@ extern "C" {
   }
 
   madserver__server_t *madserver__addWebSocketHandler(char *path, madlib__record__Record_t *handler, madserver__server_t *server) {
-    ((uWS::App*)server->uWSApp)->ws<void*>(std::string(path), {
-      .open = [handler](auto *ws) {
-        __applyPAP__(handler->fields[0]->value, 1, (void*)ws);
-      },
-      .message = [handler](auto *ws, std::string_view message, uWS::OpCode opCode) {
-        if (opCode == uWS::BINARY) {
-          madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-          msg->length = message.length();
-          unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length());
-          memcpy(messageBytes, message.data(), message.length());
-          msg->bytes = messageBytes;
-          __applyPAP__(handler->fields[2]->value, 2, (void*)ws, msg);
-        } else if (opCode == uWS::TEXT) {
-          madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
-          msg->length = message.length();
-          unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length() + 1);
-          memcpy(messageBytes, message.data(), message.length());
-          messageBytes[message.length()] = '\0';
-          msg->bytes = messageBytes;
-          __applyPAP__(handler->fields[2]->value, 2, (void*)ws, msg);
-        }
+    auto open = [handler, server](auto *ws) {
+      madserver__socket_t* socket = (madserver__socket_t*) GC_MALLOC(sizeof(madserver__socket_t));
+      socket->uWSSocket = ws;
+      socket->isSSL = isSSL(server);
+      __applyPAP__(handler->fields[0]->value, 1, (void*)socket);
+    };
+
+    auto message = [handler, server](auto *ws, std::string_view message, uWS::OpCode opCode) {
+      madserver__socket_t* socket = (madserver__socket_t*) GC_MALLOC(sizeof(madserver__socket_t));
+      socket->uWSSocket = ws;
+      socket->isSSL = isSSL(server);
+
+      if (opCode == uWS::BINARY) {
+        madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+        msg->length = message.length();
+        unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length());
+        memcpy(messageBytes, message.data(), message.length());
+        msg->bytes = messageBytes;
+
+        __applyPAP__(handler->fields[2]->value, 2, (void*)socket, msg);
+      } else if (opCode == uWS::TEXT) {
+        madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
+        msg->length = message.length();
+        unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length() + 1);
+        memcpy(messageBytes, message.data(), message.length());
+        messageBytes[message.length()] = '\0';
+        msg->bytes = messageBytes;
+
+        __applyPAP__(handler->fields[2]->value, 2, (void*)socket, msg);
       }
-    });
+    };
+
+    if (isSSL(server)) {
+      ((uWS::SSLApp*)server->uWSApp)->ws<void*>(std::string(path), {
+        .open = open,
+        .message = message,
+      });
+    } else {
+      ((uWS::App*)server->uWSApp)->ws<void*>(std::string(path), {
+        .open = open,
+        .message = message,
+      });
+    }
 
     return server;
   }
 
-  void madserver__sendFFI(madlib__bytearray__ByteArray_t *data, uWS::WebSocket<false, true, void*> *ws) {
-    ws->send(std::string_view((const char*) data->bytes, data->length));
+  void madserver__sendFFI(madlib__bytearray__ByteArray_t *data, madserver__socket_t *madSocket) {
+    if (madSocket->isSSL) {
+      ((uWS::WebSocket<true, true, void*>*) madSocket->uWSSocket)->send(std::string_view((const char*) data->bytes, data->length));
+    } else {
+      ((uWS::WebSocket<false, true, void*>*) madSocket->uWSSocket)->send(std::string_view((const char*) data->bytes, data->length));
+    }
   }
 
   madserver__server_t *madserver__addGetHandler(char *path, PAP_t *handler, madserver__server_t *server) {
