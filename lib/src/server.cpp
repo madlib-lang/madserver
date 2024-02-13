@@ -290,12 +290,20 @@ extern "C" {
       __applyPAP__(handler->fields[0]->value, 1, (void*)socket);
     };
 
+    auto close = [handler, server](auto *ws, int code, std::string_view message) {
+      madserver__socket_t* socket = (madserver__socket_t*) GC_MALLOC(sizeof(madserver__socket_t));
+      socket->uWSSocket = ws;
+      socket->isSSL = isSSL(server);
+      __applyPAP__(handler->fields[1]->value, 1, (void*)socket);
+    };
+
     auto message = [handler, server](auto *ws, std::string_view message, uWS::OpCode opCode) {
       madserver__socket_t* socket = (madserver__socket_t*) GC_MALLOC(sizeof(madserver__socket_t));
       socket->uWSSocket = ws;
       socket->isSSL = isSSL(server);
 
       if (opCode == uWS::BINARY) {
+        std::cout << "BIN" << std::endl;
         madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
         msg->length = message.length();
         unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length());
@@ -304,6 +312,8 @@ extern "C" {
 
         __applyPAP__(handler->fields[2]->value, 2, (void*)socket, msg);
       } else if (opCode == uWS::TEXT) {
+        std::cout << "YOU" << std::endl;
+
         madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
         msg->length = message.length();
         unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length() + 1);
@@ -318,11 +328,13 @@ extern "C" {
     if (isSSL(server)) {
       ((uWS::SSLApp*)server->uWSApp)->ws<void*>(std::string(path), {
         .open = open,
+        .close = close,
         .message = message,
       });
     } else {
       ((uWS::App*)server->uWSApp)->ws<void*>(std::string(path), {
         .open = open,
+        .close = close,
         .message = message,
       });
     }

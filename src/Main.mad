@@ -1,25 +1,17 @@
-import type { Wish } from "Wish"
-import type { Response, Method, Header } from "Http"
+import type { Header, Method, Response } from "Http"
 import type { Maybe } from "Maybe"
-import IO from "IO"
+import type { Wish } from "Wish"
+
 import Date from "Date"
-import Url from "Url"
-import { fromMaybe, Nothing } from "Maybe"
 import { when } from "Function"
+import { CONNECT, DELETE, GET, HEAD, OPTIONS, PATCH, POST, PUT, TRACE, methodStr } from "Http"
+import IO from "IO"
+import { Nothing, fromMaybe } from "Maybe"
+import Url from "Url"
 import { fulfill } from "Wish"
-import {
-  methodStr,
-  CONNECT,
-  DELETE,
-  GET,
-  HEAD,
-  OPTIONS,
-  PATCH,
-  POST,
-  PUT,
-  TRACE
-} from "Http"
+
 import { parseQueryParameters, parseUrlParameters } from "@/UrlParser"
+
 
 
 type Server = Server
@@ -27,8 +19,8 @@ export type Server
 
 alias WebSocketHandlerRecord = {
   onConnected :: WebSocket -> {},
-  onMessage :: WebSocket -> ByteArray -> {},
   onDisconnected :: WebSocket -> {},
+  onMessage :: WebSocket -> ByteArray -> {},
 }
 
 type WebSocketHandler = WebSocketHandler(WebSocketHandlerRecord)
@@ -48,10 +40,14 @@ DEFAULT_WEB_SOCKET_HANDLER = WebSocketHandler({
 onConnected :: (WebSocket -> {}) -> WebSocketHandler -> WebSocketHandler
 export onConnected = (connectionHandler, wsHandler) => pipe(
   unwrapWebSocketHandler,
-  (r) => ({
-    ...r,
-    onConnected: connectionHandler
-  }),
+  (r) => ({ ...r, onConnected: connectionHandler }),
+  WebSocketHandler,
+)(wsHandler)
+
+onDisconnected :: (WebSocket -> {}) -> WebSocketHandler -> WebSocketHandler
+export onDisconnected = (disconnectionHandler, wsHandler) => pipe(
+  unwrapWebSocketHandler,
+  (r) => ({ ...r, onDisconnected: disconnectionHandler }),
   WebSocketHandler,
 )(wsHandler)
 
@@ -59,10 +55,7 @@ export onConnected = (connectionHandler, wsHandler) => pipe(
 onMessage :: (WebSocket -> ByteArray -> {}) -> WebSocketHandler -> WebSocketHandler
 export onMessage = (messageHandler, wsHandler) => pipe(
   unwrapWebSocketHandler,
-  (r) => ({
-    ...r,
-    onMessage: messageHandler
-  }),
+  (r) => ({ ...r, onMessage: messageHandler }),
   WebSocketHandler,
 )(wsHandler)
 
@@ -78,34 +71,23 @@ export getSocketId = extern "madserver__getSocketIdFFI"
 
 
 export alias IncomingRequest = {
+  body :: ByteArray,
+  headers :: List Header,
+  ip :: String,
   method :: Method,
   path :: String,
-  headers :: List Header,
-  body :: ByteArray,
-  ip :: String,
   queryParameters :: Dictionary String String,
   urlParameters :: Dictionary String String,
 }
 
-export type LogLevel
-  = InfoLevel
-  | WarningLevel
-  | ErrorLevel
+export type LogLevel = InfoLevel | WarningLevel | ErrorLevel
 
 DEFAULT_OPTIONS :: Options
-export DEFAULT_OPTIONS = {
-  verbose: false,
-  ssl: Nothing,
-}
+export DEFAULT_OPTIONS = { verbose: false, ssl: Nothing }
 
 export alias Options = {
+  ssl :: Maybe { caFile :: Maybe String, certificateFile :: String, keyFile :: String, passphrase :: Maybe String },
   verbose :: Boolean,
-  ssl :: Maybe {
-    certificateFile :: String,
-    keyFile :: String,
-    passphrase :: Maybe String,
-    caFile :: Maybe String,
-  }
 }
 
 
@@ -174,7 +156,12 @@ optionsFFI = extern "madserver__addOptionsHandler"
 anyFFI :: String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server
 anyFFI = extern "madserver__addAnyHandler"
 
-addRoute :: String -> (String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server) -> String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+addRoute :: String
+  -> (String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server)
+  -> String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 addRoute = (methodName, routeFn, path, handler, server) => routeFn(
   path,
   (request, cb) => {
@@ -193,18 +180,22 @@ addRoute = (methodName, routeFn, path, handler, server) => routeFn(
         log(InfoLevel, `Url requested: '${methodStr(request.method)} ${preparedRequest.path}'`)
         return opts
       },
-      getOptions(server)
+      getOptions(server),
     )
 
     pipe(
       handler,
-      fulfill(cb, cb)
+      fulfill(cb, cb),
     )(preparedRequest)
   },
-  server
+  server,
 )
 
-getRouteFn :: Method -> (String -> (IncomingRequest -> (Response ByteArray -> {}) -> {}) -> Server -> Server)
+getRouteFn :: Method
+  -> String
+  -> (IncomingRequest -> (Response ByteArray -> {}) -> {})
+  -> Server
+  -> Server
 getRouteFn = (method) => where(method) {
   GET =>
     getFFI
@@ -234,51 +225,91 @@ getRouteFn = (method) => where(method) {
     optionsFFI
 }
 
-route :: Method -> String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+route :: Method
+  -> String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export route = (method, path, handler, server) => {
   pipe(
     getRouteFn,
-    addRoute(methodStr(method), $, path, handler, server)
+    addRoute(methodStr(method), $, path, handler, server),
   )(method)
 
   return server
 }
 
-any :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+any :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export any = addRoute("ANY", anyFFI)
 
-get :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+get :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export get = route(GET)
 
-post :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+post :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export post = route(POST)
 
-put :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+put :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export put = route(PUT)
 
-patch :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+patch :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export patch = route(PATCH)
 
-delete :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+delete :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export delete = route(DELETE)
 
-head :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+head :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export head = route(HEAD)
 
-connect :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+connect :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export connect = route(CONNECT)
 
-trace :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+trace :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export trace = route(TRACE)
 
-options :: String -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray)) -> Server -> Server
+options :: String
+  -> (IncomingRequest -> Wish (Response ByteArray) (Response ByteArray))
+  -> Server
+  -> Server
 export options = route(OPTIONS)
 
 wsFFI :: String -> WebSocketHandlerRecord -> Server -> Server
 export wsFFI = extern "madserver__addWebSocketHandler"
 
 ws :: String -> (WebSocketHandler -> WebSocketHandler) -> Server -> Server
-export ws = (path, handlerFn) => wsFFI(path, pipe(handlerFn, unwrapWebSocketHandler)(DEFAULT_WEB_SOCKET_HANDLER))
+export ws = (path, handlerFn) => wsFFI(
+  path,
+  pipe(
+    handlerFn,
+    unwrapWebSocketHandler,
+  )(DEFAULT_WEB_SOCKET_HANDLER),
+)
 
 run :: Integer -> Server -> Server
 export run = (port, server) => {
@@ -289,20 +320,16 @@ export run = (port, server) => {
         .verbose,
         () => {
           log(InfoLevel, `Verbose mode enabled`)
-          if (opts.ssl != Nothing) {
-            log(InfoLevel, "SSL on")
-          } else {
-            log(InfoLevel, "SSL off")
-          }
+          if (opts.ssl != Nothing) { log(InfoLevel, "SSL on") } else { log(InfoLevel, "SSL off") }
           log(InfoLevel, `Server started on port '${show(port)}'`)
           return opts
         },
-        opts
+        opts,
       )
 
       return runFFI(port, server)
     },
-    0
+    0,
   )
 
   return server

@@ -8,18 +8,18 @@ if [ ! -d "lib/include" ]; then
   cd .buildlibs
 
   # install uWebSockets
-  wget https://github.com/uNetworking/uWebSockets/archive/refs/tags/v20.14.0.zip
-  unzip v20.14.0.zip -d uwebsockets
-  cp uwebsockets/uWebSockets-20.14.0/src/* ../lib/include/
+  wget https://github.com/uNetworking/uWebSockets/archive/refs/tags/v20.60.0.zip
+  unzip v20.60.0.zip -d uwebsockets
+  cp uwebsockets/uWebSockets-20.60.0/src/* ../lib/include/
 
   # build uSockets
-  wget https://github.com/uNetworking/uSockets/archive/refs/tags/v0.8.1.zip
-  unzip v0.8.1.zip -d usockets
-  cd usockets/uSockets-0.8.1/
-  make CFLAGS="-I$(madlib config runtime-lib-headers-path)" WITH_LIBUV=1 WITH_OPENSSL=1
+  wget https://github.com/uNetworking/uSockets/archive/refs/tags/v0.8.8.zip
+  unzip v0.8.8.zip -d usockets
+  cd usockets/uSockets-0.8.8/
+  make CFLAGS="-I\"$(madlib config runtime-lib-headers-path)\"" WITH_LIBUV=1 WITH_OPENSSL=1
   cd ../..
-  cp -R usockets/uSockets-0.8.1/src/* ../lib/include/
-  cp -R usockets/uSockets-0.8.1/uSockets.a ../lib/lib/libusocket.a
+  cp -R usockets/uSockets-0.8.8/src/* ../lib/include/
+  cp -R usockets/uSockets-0.8.8/uSockets.a ../lib/lib/libusocket.a
 
   cd ..
   rm -rf .buildlibs
