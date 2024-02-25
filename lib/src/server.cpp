@@ -303,7 +303,6 @@ extern "C" {
       socket->isSSL = isSSL(server);
 
       if (opCode == uWS::BINARY) {
-        std::cout << "BIN" << std::endl;
         madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
         msg->length = message.length();
         unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length());
@@ -312,8 +311,6 @@ extern "C" {
 
         __applyPAP__(handler->fields[2]->value, 2, (void*)socket, msg);
       } else if (opCode == uWS::TEXT) {
-        std::cout << "YOU" << std::endl;
-
         madlib__bytearray__ByteArray_t *msg = (madlib__bytearray__ByteArray_t*) GC_MALLOC(sizeof(madlib__bytearray__ByteArray_t));
         msg->length = message.length();
         unsigned char *messageBytes = (unsigned char*) GC_MALLOC_ATOMIC(message.length() + 1);
